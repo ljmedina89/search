@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rastreo de Paquetes | BLR</title>
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    :root{
+      --bg:#0b0c10;           /* fondo oscuro elegante */
+      --panel:#111318;        /* panel cards */
+      --muted:#9aa4ae;        /* texto secundario */
+      --text:#e8edf2;         /* texto principal */
+      --primary:#2563eb;      /* azul moderno */
+      --primary-2:#1e40af;    /* azul profundo */
+      --ok:#10b981;           /* verde */
+      --warn:#f59e0b;         /* amarillo */
+      --chip:#1b1f2a;         /* chip bg */
+      --border:#232734;       /* bordes sutiles */
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg, #0b0c10 0%, #0d1117 100%);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,Arial,sans-serif}
+    a{color:var(--text)}
+    .container{max-width:980px;margin:auto;padding:24px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:8px 0 20px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:36px;height:36px;display:grid;place-items:center;border-radius:10px;background:radial-gradient(120px 60px at 20% 20%, #3b82f6 0, #1e40af 35%, #111318 65%)}
+    .brand b{font-size:18px;letter-spacing:.3px}
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow)}
+
+    /* Hero */
+    .hero{padding:20px}
+    .title{font-size:28px;font-weight:800;letter-spacing:.4px;margin:0}
+    .subtitle{margin:6px 0 0;color:var(--muted)}
+
+    /* Search */
+    .search{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:16px}
+    .input{appearance:none;width:100%;padding:14px 14px;border-radius:12px;border:1px solid var(--border);background:#0f131a;color:var(--text);outline:none}
+    .input:focus{border-color:#3557ff;box-shadow:0 0 0 4px rgba(53,87,255,.12)}
+    .btn{cursor:pointer;border:1px solid #2d3a7b;background:linear-gradient(180deg,#2b47e5,#2038d0);color:white;padding:14px 18px;border-radius:12px;font-weight:700;letter-spacing:.3px}
+    .btn:active{transform:translateY(1px)}
+
+    /* Summary */
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .card{padding:16px}
+    .kpi{display:flex;align-items:center;gap:12px}
+    .kpi .icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--chip);border:1px solid var(--border)}
+    .kpi h3{margin:0;font-size:14px;color:var(--muted)}
+    .kpi p{margin:2px 0 0;font-size:22px;font-weight:800}
+
+    /* Tables */
+    .section{margin-top:18px}
+    .section h4{margin:0 0 10px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.2em}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:12px;border-bottom:1px dashed var(--border);text-align:left;font-size:14px}
+    th{color:var(--muted);font-weight:600}
+    .status{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--chip);border:1px solid var(--border);font-size:12px}
+    .status.ok{border-color:#0b5;}
+    .status.cns{border-color:#ca0}
+    .status.rec{border-color:#357}
+    .muted{color:var(--muted)}
+    .empty{border:1px dashed var(--border);border-radius:14px;padding:16px;text-align:center;color:var(--muted)}
+
+    /* Footer */
+    footer{margin:28px 0 8px;text-align:center;color:var(--muted)}
+
+    /* Responsive */
+    @media (max-width:760px){
+      .grid{grid-template-columns:1fr}
+      .title{font-size:22px}
+      header{flex-direction:column;align-items:flex-start}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" stroke="#93c5fd" stroke-width="1.2"/>
+            <path d="M12 7l4 2.2v5.6L12 17l-4-2.2V9.2L12 7z" fill="#60a5fa"/>
+          </svg>
+        </div>
+        <b>BLR Tracking</b>
+      </div>
+      <div class="muted">Consulta el estado y tus libras en tiempo real</div>
+    </header>
+
+    <section class="panel hero">
+      <h1 class="title">Rastrea tus paquetes</h1>
+      <p class="subtitle">Ingresa tu código de cliente para ver <b>libras pendientes</b>, <b>libras enviadas</b> y el detalle por paquete.</p>
+      <div class="search">
+        <input id="code" class="input" placeholder="Ej: BLR-ABC123" inputmode="latin" autocomplete="off" />
+        <button class="btn" id="btnConsultar" onclick="consultar()">Consultar</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <button class="btn" style="background:linear-gradient(180deg,#1f2937,#111827);border-color:#333" onclick="demo()">Probar demo</button>
+        <span id="hint" class="muted">Consejo: presiona Enter para consultar más rápido</span>
+      </div>
+    </section>
+
+    <section id="result" class="section" style="display:none">
+      <div class="grid">
+        <div class="panel card">
+          <div class="kpi">
+            <div class="icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7h16M4 12h16M4 17h16" stroke="#7aa2ff"/></svg>
+            </div>
+            <div>
+              <h3>Libras pendientes</h3>
+              <p id="lbsPendientes">0.00</p>
+            </div>
+          </div>
+        </div>
+        <div class="panel card">
+          <div class="kpi">
+            <div class="icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12l4 4L19 6" stroke="#74d3ae" stroke-width="2"/></svg>
+            </div>
+            <div>
+              <h3>Libras enviadas</h3>
+              <p id="lbsEnviadas">0.00</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h4>Pendientes</h4>
+        <div id="pendientes"></div>
+      </div>
+      <div class="section">
+        <h4>Enviados</h4>
+        <div id="enviados"></div>
+      </div>
+    </section>
+
+    <section id="empty" class="section" style="display:none">
+      <div class="panel card empty">
+        Ingresa tu código para ver tus paquetes.
+      </div>
+    </section>
+
+    <footer>
+      © <span id="year"></span> BLR • Privacidad primero — solo mostramos pesos y estados
+    </footer>
+  </div>
+
+  <script>
+    // 1) Cambia esta URL por la de tu Apps Script web app
+    //    Debe terminar en .../exec
+    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwO0kLtljgUrFYb55vvrRAK1wWzzmCR6wBI_IGzmm-05DTSV8VOvyRqbSLrM7G9LusX9Q/exec';
+
+    // Guarda/recupera el último código usado
+    const $ = sel => document.querySelector(sel);
+    const fmtDate = s => {
+      if(!s) return '';
+      const d = new Date(s);
+      if (isNaN(d)) return s;
+      return d.toLocaleString(undefined, {year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    }
+
+    function showEmpty(on){ $('#empty').style.display = on? 'block':'none'; }
+    function showResult(on){ $('#result').style.display = on? 'block':'none'; }
+
+    function row(pkg){
+      const cls = pkg.estado==='Enviado' ? 'ok' : (pkg.estado==='Consolidado' ? 'cns' : 'rec');
+      return `<tr>
+        <td>${pkg.pkg_code}</td>
+        <td>${(pkg.peso_lb??0).toFixed ? pkg.peso_lb.toFixed(2) : pkg.peso_lb}</td>
+        <td><span class="status ${cls}">${pkg.estado}</span></td>
+        <td class="muted">${fmtDate(pkg.fecha_estado||pkg.fecha)}</td>
+      </tr>`;
+    }
+
+    function table(items){
+      if(!items || !items.length){
+        return `<div class="empty">Sin registros</div>`;
+      }
+      return `<div class="panel card">
+        <div style="overflow:auto">
+          <table>
+            <thead>
+              <tr><th>Paquete</th><th>Peso (lb)</th><th>Estado</th><th>Actualizado</th></tr>
+            </thead>
+            <tbody>
+              ${items.map(row).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+    }
+
+    async function consultar(){
+      const code = $('#code').value.trim();
+      if(!code){ showResult(false); showEmpty(true); return; }
+      const btn = $('#btnConsultar');
+      const old = btn.textContent; btn.textContent = 'Consultando…'; btn.disabled = true;
+      try{
+        const url = `${WEBAPP_URL}?path=api/track&code=${encodeURIComponent(code)}`;
+        const r = await fetch(url, {headers:{'cache-control':'no-cache'}});
+        const j = await r.json();
+        if(!j.ok){
+          $('#pendientes').innerHTML = `<div class='empty'>No se encontraron registros para <b>${code}</b></div>`;
+          $('#enviados').innerHTML = '';
+          $('#lbsPendientes').textContent = '0.00';
+          $('#lbsEnviadas').textContent = '0.00';
+          showEmpty(false); showResult(true);
+          return;
+        }
+        localStorage.setItem('blr_code', code);
+        $('#lbsPendientes').textContent = Number(j.lbs_pendientes||0).toFixed(2);
+        $('#lbsEnviadas').textContent  = Number(j.lbs_enviadas||0).toFixed(2);
+        $('#pendientes').innerHTML = table(j.pendientes||[]);
+        $('#enviados').innerHTML   = table(j.enviados||[]);
+        showEmpty(false); showResult(true);
+      }catch(err){
+        console.error(err);
+        alert('Error consultando el servicio. Verifica tu conexión o inténtalo más tarde.');
+      }finally{
+        btn.textContent = old; btn.disabled = false;
+      }
+    }
+
+    function demo(){
+      // Demo visual: si no hay backend aún, mostramos datos ficticios
+      const j = {
+        ok:true,
+        lbs_pendientes: 3.70,
+        lbs_enviadas: 12.50,
+        pendientes:[
+          {pkg_code:'PKG-202511-0012', peso_lb:1.85, estado:'Recibido', fecha_estado:new Date().toISOString()},
+          {pkg_code:'PKG-202511-0013', peso_lb:1.85, estado:'Consolidado', fecha_estado:new Date().toISOString()},
+        ],
+        enviados:[
+          {pkg_code:'PKG-202510-0023', peso_lb:4.20, estado:'Enviado', fecha_estado:'2025-10-18T15:14:00'},
+          {pkg_code:'PKG-202510-0037', peso_lb:8.30, estado:'Enviado', fecha_estado:'2025-10-30T09:01:00'}
+        ]
+      };
+      $('#lbsPendientes').textContent = j.lbs_pendientes.toFixed(2);
+      $('#lbsEnviadas').textContent  = j.lbs_enviadas.toFixed(2);
+      $('#pendientes').innerHTML = table(j.pendientes);
+      $('#enviados').innerHTML   = table(j.enviados);
+      showEmpty(false); showResult(true);
+      $('#code').value = localStorage.getItem('blr_code') || 'BLR-ABC123';
+    }
+
+    // UX: Enter para consultar, persistencia del último código
+    document.addEventListener('DOMContentLoaded', ()=>{
+      $('#year').textContent = new Date().getFullYear();
+      const last = localStorage.getItem('blr_code');
+      if(last){ $('#code').value = last; consultar(); }
+      else { showEmpty(true); }
+      $('#code').addEventListener('keydown', e=>{ if(e.key==='Enter') consultar(); });
+    });
+  </script>
+</body>
+</html>
