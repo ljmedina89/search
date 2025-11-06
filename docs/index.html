@@ -85,4 +85,199 @@
 
     <section class="panel hero">
       <h1 class="title">Rastrea tus paquetes</h1>
-      <p class="subtitle">Ingresa tu código de cliente para ver <b>libras pendientes</b>, <b>libras enviadas</b> y el detalle
+      <p class="subtitle">Ingresa tu código de cliente para ver <b>libras pendientes</b>, <b>libras enviadas</b> y el detalle por paquete.</p>
+      <div class="search">
+        <input id="code" class="input" placeholder="Ej: BLR-ABC123" inputmode="latin" autocomplete="off" />
+        <button class="btn" id="btnConsultar" onclick="consultar()">Consultar</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <button class="btn" style="background:linear-gradient(180deg,#1f2937,#111827);border-color:#333" onclick="demo()">Probar demo</button>
+        <span id="hint" class="muted">Consejo: presiona Enter para consultar más rápido</span>
+      </div>
+    </section>
+
+    <section id="result" class="section" style="display:none">
+      <div class="grid">
+        <div class="panel card">
+          <div class="kpi">
+            <div class="icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7h16M4 12h16M4 17h16" stroke="#7aa2ff"/></svg>
+            </div>
+            <div>
+              <h3>Libras pendientes</h3>
+              <p id="lbsPendientes">0.00</p>
+            </div>
+          </div>
+        </div>
+        <div class="panel card">
+          <div class="kpi">
+            <div class="icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12l4 4L19 6" stroke="#74d3ae" stroke-width="2"/></svg>
+            </div>
+            <div>
+              <h3>Libras enviadas</h3>
+              <p id="lbsEnviadas">0.00</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h4>Pendientes</h4>
+        <div id="pendientes"></div>
+      </div>
+      <div class="section">
+        <h4>Enviados</h4>
+        <div id="enviados"></div>
+      </div>
+    </section>
+
+    <section id="empty" class="section" style="display:none">
+      <div class="panel card empty">
+        Ingresa tu código para ver tus paquetes.
+      </div>
+    </section>
+
+    <footer>
+      © <span id="year"></span> BLR • 2025
+    </footer>
+  </div>
+
+  <script>
+    // URL del Apps Script (termina en /exec)
+    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwV_uFc0iJZ1gccqugHoSuFKmrPTGGkt8PiY52kZlD8ubE1oKozLIuwNr1sX85QODFPFg/exec';
+
+    const $ = sel => document.querySelector(sel);
+    const fmtDate = s => {
+      if(!s) return '';
+      const d = new Date(s);
+      if (isNaN(d)) return s;
+      return d.toLocaleString(undefined, {year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    };
+
+    function showEmpty(on){ $('#empty').style.display = on? 'block':'none'; }
+    function showResult(on){ $('#result').style.display = on? 'block':'none'; }
+
+    function row(pkg){
+      const cls = pkg.estado==='Enviado' ? 'ok' : (pkg.estado==='Consolidado' ? 'cns' : 'rec');
+      return `<tr>
+        <td>${pkg.pkg_code}</td>
+        <td>${(pkg.peso_lb??0).toFixed ? pkg.peso_lb.toFixed(2) : pkg.peso_lb}</td>
+        <td><span class="status ${cls}">${pkg.estado}</span></td>
+        <td class="muted">${fmtDate(pkg.fecha_estado||pkg.fecha)}</td>
+      </tr>`;
+    }
+
+    function table(items){
+      if(!items || !items.length){
+        return `<div class="empty">Sin registros</div>`;
+      }
+      return `<div class="panel card">
+        <div style="overflow:auto">
+          <table>
+            <thead>
+              <tr><th>Paquete</th><th>Peso (lb)</th><th>Estado</th><th>Actualizado</th></tr>
+            </thead>
+            <tbody>
+              ${items.map(row).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+    }
+
+    // --- JSONP helper (evita CORS) ---
+    function jsonp(url, onSuccess, onError){
+      const cbName = 'blr_cb_' + Math.random().toString(36).slice(2);
+      window[cbName] = function(data){
+        try { onSuccess(data); } finally {
+          delete window[cbName];
+          script.remove();
+        }
+      };
+      const script = document.createElement('script');
+      script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
+      script.async = true;
+      script.onerror = function(){
+        try { onError && onError(); } finally {
+          delete window[cbName];
+          script.remove();
+        }
+      };
+      document.body.appendChild(script);
+    }
+
+    function renderResult(j, code){
+      if(!j || !j.ok){
+        $('#pendientes').innerHTML = `<div class='empty'>No se encontraron registros para <b>${code}</b></div>`;
+        $('#enviados').innerHTML = '';
+        $('#lbsPendientes').textContent = '0.00';
+        $('#lbsEnviadas').textContent = '0.00';
+        showEmpty(false); showResult(true);
+        return;
+      }
+      localStorage.setItem('blr_code', code);
+      $('#lbsPendientes').textContent = Number(j.lbs_pendientes||0).toFixed(2);
+      $('#lbsEnviadas').textContent  = Number(j.lbs_enviadas||0).toFixed(2);
+      $('#pendientes').innerHTML = table(j.pendientes||[]);
+      $('#enviados').innerHTML   = table(j.enviados||[]);
+      showEmpty(false); showResult(true);
+    }
+
+    function consultar(){
+      const code = $('#code').value.trim();
+      if(!code){ showResult(false); showEmpty(true); return; }
+      const btn = $('#btnConsultar');
+      const old = btn.textContent; btn.textContent = 'Consultando…'; btn.disabled = true;
+
+      const url = `${WEBAPP_URL}?path=api/track&code=${encodeURIComponent(code)}`;
+      jsonp(url,
+        (data)=> { renderResult(data, code); btn.textContent = old; btn.disabled = false; },
+        ()=> { alert('Error consultando el servicio. Verifica tu conexión o inténtalo más tarde.'); btn.textContent = old; btn.disabled = false; }
+      );
+    }
+
+    // Demo visual
+    function demo(){
+      const j = {
+        ok:true,
+        lbs_pendientes: 3.70,
+        lbs_enviadas: 12.50,
+        pendientes:[
+          {pkg_code:'PKG-202511-0012', peso_lb:1.85, estado:'Recibido', fecha_estado:new Date().toISOString()},
+          {pkg_code:'PKG-202511-0013', peso_lb:1.85, estado:'Consolidado', fecha_estado:new Date().toISOString()},
+        ],
+        enviados:[
+          {pkg_code:'PKG-202510-0023', peso_lb:4.20, estado:'Enviado', fecha_estado:'2025-10-18T15:14:00'},
+          {pkg_code:'PKG-202510-0037', peso_lb:8.30, estado:'Enviado', fecha_estado:'2025-10-30T09:01:00'}
+        ]
+      };
+      $('#lbsPendientes').textContent = j.lbs_pendientes.toFixed(2);
+      $('#lbsEnviadas').textContent  = j.lbs_enviadas.toFixed(2);
+      $('#pendientes').innerHTML = table(j.pendientes);
+      $('#enviados').innerHTML   = table(j.enviados);
+      showEmpty(false); showResult(true);
+      $('#code').value = localStorage.getItem('blr_code') || 'BLR-ABC123';
+    }
+
+    function getQuery(name){
+      const p = new URLSearchParams(location.search);
+      return p.get(name);
+    }
+
+    // UX: Enter para consultar, persistencia del último código, y auto-consulta si viene ?code=
+    document.addEventListener('DOMContentLoaded', ()=>{
+      $('#year').textContent = new Date().getFullYear();
+
+      const qcode = getQuery('code');
+      const last = localStorage.getItem('blr_code');
+
+      if (qcode) { $('#code').value = qcode; consultar(); }
+      else if (last) { $('#code').value = last; consultar(); }
+      else { showEmpty(true); }
+
+      $('#code').addEventListener('keydown', e=>{ if(e.key==='Enter') consultar(); });
+    });
+  </script>
+</body>
+</html>
