@@ -136,12 +136,32 @@
       letter-spacing:.03em;
       text-transform:uppercase;
       font-size:13px;
+      text-align:center;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
     }
     .btn:active{transform:translateY(1px)}
     .btn:disabled{
       opacity:.55;
       cursor:default;
       transform:none;
+    }
+    .btn.ghost{
+      background:linear-gradient(135deg,#020617,#020617);
+      border:1px solid #1f2937;
+      color:var(--muted);
+    }
+    .quick-links{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:14px;
+    }
+    .quick-links a{
+      flex:1 1 180px;
+      text-decoration:none;
     }
 
     /* KPI cards */
@@ -181,6 +201,22 @@
       margin:3px 0 0;
       font-size:24px;
       font-weight:800;
+    }
+
+    /* Nombre cliente */
+    #nombreClienteBox{
+      display:none;
+      text-align:center;
+      margin-bottom:16px;
+      padding:14px 18px;
+      border-radius:var(--radius-xl);
+      background:linear-gradient(145deg,#0b1120,#020617);
+      border:1px solid rgba(16,185,129,.5);
+    }
+    #nombreCliente{
+      font-size:18px;
+      font-weight:600;
+      color:var(--accent);
     }
 
     /* Tables */
@@ -239,7 +275,7 @@
       <div class="brand">
         <div class="brand-logo">
           <!-- Cambia la ruta por la de tu logo real -->
-          <img src="/img/logo.png" alt="Beloura" />
+          <img src="/img/beloura-logo.png" alt="Beloura" />
         </div>
         <div class="brand-text">
           <span>BELOURA</span>
@@ -248,7 +284,7 @@
       </div>
       <div class="tagline">
         Consulta segura en línea<br>
-        <span style="opacity:.8">Consulta tus pesos y estados</span>
+        <span style="opacity:.8">Solo mostramos pesos y estados</span>
       </div>
     </header>
 
@@ -264,12 +300,25 @@
         <input id="code" class="input" placeholder="Ej: BLR-ABC123" inputmode="latin" autocomplete="off" />
         <button class="btn" id="btnConsultar" onclick="consultar()">Consultar</button>
       </div>
+
+      <!-- NUEVOS BOTONES: Store y Track -->
+      <div class="quick-links">
+        <a href="https://belourastore.com" target="_blank" rel="noopener" class="btn ghost">
+          Ir a Beloura Store
+        </a>
+        <a href="https://track.beloura.shop/" target="_blank" rel="noopener" class="btn ghost">
+          Ir a Track Beloura
+        </a>
+      </div>
     </section>
 
     <!-- Resultados -->
     <section id="result" class="section" style="display:none">
-      <div id="nombreCliente" class="panel" style="margin-bottom:16px; text-align:center; font-weight:600; font-size:18px; color:#00bfa6;">
-</div>
+      <!-- Nombre del cliente -->
+      <div id="nombreClienteBox">
+        <div id="nombreCliente"></div>
+      </div>
+
       <div class="kpi-grid">
         <div class="kpi">
           <div class="kpi-icon">
@@ -315,7 +364,7 @@
     </section>
 
     <footer>
-      © <span id="year"></span> BELOURA • 2025
+      © <span id="year"></span> BELOURA • 
     </footer>
   </div>
 
@@ -390,17 +439,29 @@
     function show(id, on){ $(id).style.display = on ? 'block' : 'none'; }
 
     function render(data, code){
+      const nameBox = $('#nombreClienteBox');
+      const nameEl  = $('#nombreCliente');
+
       if(!data || !data.ok){
         $('#pendientes').innerHTML = `<div class="empty">No se encontraron registros para el código <b>${code}</b>.</div>`;
         $('#enviados').innerHTML = '';
         $('#lbsPendientes').textContent = '0.00';
         $('#lbsEnviadas').textContent  = '0.00';
+        nameBox.style.display = 'none';
         show('#empty', false);
         show('#result', true);
         return;
       }
+
+      // Nombre del cliente
+      if(data.cliente_nombre){
+        nameEl.textContent = data.cliente_nombre;
+      }else{
+        nameEl.textContent = 'Cliente sin nombre registrado';
+      }
+      nameBox.style.display = 'block';
+
       localStorage.setItem('blr_code', code);
-      $('#nombreCliente').textContent = data.cliente_nombre ? data.cliente_nombre : 'Cliente sin nombre registrado';
       $('#lbsPendientes').textContent = Number(data.lbs_pendientes || 0).toFixed(2);
       $('#lbsEnviadas').textContent  = Number(data.lbs_enviadas   || 0).toFixed(2);
       $('#pendientes').innerHTML = table(data.pendientes || []);
@@ -414,6 +475,7 @@
       if(!code){
         show('#result', false);
         show('#empty', true);
+        $('#nombreClienteBox').style.display = 'none';
         return;
       }
       const btn = $('#btnConsultar');
