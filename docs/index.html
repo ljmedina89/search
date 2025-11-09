@@ -268,6 +268,8 @@
 
     <!-- Resultados -->
     <section id="result" class="section" style="display:none">
+      <div id="nombreCliente" class="panel" style="margin-bottom:16px; text-align:center; font-weight:600; font-size:18px; color:#00bfa6;">
+</div>
       <div class="kpi-grid">
         <div class="kpi">
           <div class="kpi-icon">
@@ -319,7 +321,7 @@
 
   <script>
     // 👉 REEMPLAZA esto por tu URL /exec de Apps Script
-    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxfeIXBDJp7XNbDPy1U_r27JCWbW0vgCK3tDBzDWlmi9Ogd0xw7wffvPkPM3q8Xy8k8Ew/exec';
+    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzp7dqjY-WR3labkHCZJ8B5DSQtUG4Ga9UrAGi7nU0qjsjeVWC5xLGjTSWGBpyVYntQfw/exec';
 
     const $ = s => document.querySelector(s);
     const fmtDate = s => {
@@ -398,6 +400,7 @@
         return;
       }
       localStorage.setItem('blr_code', code);
+      $('#nombreCliente').textContent = data.cliente_nombre ? data.cliente_nombre : 'Cliente sin nombre registrado';
       $('#lbsPendientes').textContent = Number(data.lbs_pendientes || 0).toFixed(2);
       $('#lbsEnviadas').textContent  = Number(data.lbs_enviadas   || 0).toFixed(2);
       $('#pendientes').innerHTML = table(data.pendientes || []);
